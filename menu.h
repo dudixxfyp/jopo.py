@@ -1,8 +1,9 @@
 #ifndef MENU_H
 #define MENU_H
 
-#include "game.h"  
-// game.h  feito pela pessoa 1
+#include "game.h"   // expõe hero, ghost, game_score, map[][], e variáveis globais
+
+// Pilha para histórico de ações
 typedef struct Node {
     char acao;
     struct Node *prox;
@@ -12,14 +13,16 @@ typedef struct {
     Node *topo;
 } Pilha;
 
-// funções da pilha
+// pilha
 void initPilha(Pilha *p);
 void push(Pilha *p, char acao);
 char pop(Pilha *p);
 int pilhaVazia(Pilha *p);
 
-void mostrarMenu(GameState *g, Pilha *historico);
-int salvarJogo(GameState *g);
-int carregarJogo(GameState *g);
+// menu e I/O
+void mostrarMenu();
+int salvarJogo();     // salva os dados globais (usa externs de game.h)
+int carregarJogo();   // carrega os dados e atualiza as variáveis globais
 
-#endif
+#endif // MENU_H
+
