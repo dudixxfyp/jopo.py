@@ -7,6 +7,14 @@
 
 #ifndef HERO_GHOST_TYPES
 #define HERO_GHOST_TYPES
+
+#ifndef MAX_GHOSTS
+#define MAX_GHOSTS 4
+#endif
+
+
+
+
 typedef struct _TAG_hero {
     int pos[2];      // pos[0] = x (coluna), pos[1] = y (linha)
     int direction;
@@ -31,6 +39,7 @@ extern hero pacman;        // definido em pacman.c
 extern ghost blinky;       // definido em pacman.c (ou outros ghosts)
 extern int game_score;     // definido em pacman.c
 extern char map[H][W];     // definido em pacman.c
+extern ghost ghosts[MAX_GHOSTS];        // novo: vetor de fantasmas
 
 
 extern int numFantasmas;
