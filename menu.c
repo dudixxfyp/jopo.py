@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "menu.h"
-#include "game.h"   // para as declarações extern
+#include "menu.h"   // menu.h já inclui game.h, então não precisa incluir game.h aqui
 
 // ------------------ PILHA ------------------
 void initPilha(Pilha *p) {
@@ -30,25 +29,29 @@ int pilhaVazia(Pilha *p) {
 }
 
 // ------------------ SALVAR ------------------
-
 int salvarJogo() {
     FILE *f = fopen("savegame.bin", "wb");
     if (!f) return 0;
 
-    // salva pacman (struct hero)
+    if (numFantasmas < 0) numFantasmas = 0;
+    if (numFantasmas > MAX_GHOSTS) numFantasmas = MAX_GHOSTS;
+
+    // 1. salva Pac-Man
     fwrite(&pacman, sizeof(hero), 1, f);
 
-    // salva blinky (exemplo). Se tiver vetor de fantasmas, salve todos.
-    fwrite(&blinky, sizeof(ghost), 1, f);
-
-    // salva pontuação e variáveis do jogo
-    fwrite(&game_score, sizeof(int), 1, f);
+    // 2. salva número de fantasmas
     fwrite(&numFantasmas, sizeof(int), 1, f);
+
+    // 3. salva todos os fantasmas
+    fwrite(ghosts, sizeof(ghost), numFantasmas, f);
+
+    // 4. salva variáveis do jogo
+    fwrite(&game_score, sizeof(int), 1, f);
     fwrite(&nivelAtual, sizeof(int), 1, f);
     fwrite(&tempoDesdeInicio, sizeof(float), 1, f);
     fwrite(&pelletsRemaining, sizeof(int), 1, f);
 
-    // opcional: salvar o mapa (25x42 chars)
+    // 5. salva mapa completo
     fwrite(map, sizeof(char), H * W, f);
 
     fclose(f);
@@ -60,15 +63,28 @@ int carregarJogo() {
     FILE *f = fopen("savegame.bin", "rb");
     if (!f) return 0;
 
-    fread(&pacman, sizeof(hero), 1, f);
-    fread(&blinky, sizeof(ghost), 1, f);
+    // 1. lê Pac-Man
+    if (fread(&pacman, sizeof(hero), 1, f) != 1) { fclose(f); return 0; }
+
+    // 2. lê quantidade de fantasmas
+    if (fread(&numFantasmas, sizeof(int), 1, f) != 1) { fclose(f); return 0; }
+
+    if (numFantasmas < 0) numFantasmas = 0;
+    if (numFantasmas > MAX_GHOSTS) numFantasmas = MAX_GHOSTS;
+
+    // 3. lê vetor de fantasmas
+    if (fread(ghosts, sizeof(ghost), numFantasmas, f) != (size_t)numFantasmas) {
+        fclose(f);
+        return 0;
+    }
+
+    // 4. lê variáveis do jogo
     fread(&game_score, sizeof(int), 1, f);
-    fread(&numFantasmas, sizeof(int), 1, f);
     fread(&nivelAtual, sizeof(int), 1, f);
     fread(&tempoDesdeInicio, sizeof(float), 1, f);
     fread(&pelletsRemaining, sizeof(int), 1, f);
 
-    // recarrega mapa
+    // 5. lê mapa
     fread(map, sizeof(char), H * W, f);
 
     fclose(f);
@@ -76,13 +92,14 @@ int carregarJogo() {
 }
 
 // ------------------ MENU VIA GETCHAR ------------------
-// O menu usa as variáveis globais definidas pelo pacman.c
-// Quando o usuário escolher voltar (V), o menu deve alterar jogoPausado = 0;
-// Quando o usuário escolher Novo (N), setar resetar = 1; a pessoa 1 deve reagir.
 void mostrarMenu() {
     static Pilha historico;
     static int pilha_inicializada = 0;
-    if (!pilha_inicializada) { initPilha(&historico); pilha_inicializada = 1; }
+
+    if (!pilha_inicializada) {
+        initPilha(&historico);
+        pilha_inicializada = 1;
+    }
 
     printf("\n================ MENU DO JOGO ================\n");
     printf("N - Novo Jogo\n");
@@ -98,13 +115,12 @@ void mostrarMenu() {
     printf("Escolha uma opcao: ");
     int opcao = getchar();
 
-    // limpa buffer até newline
-    while (getchar() != '\n');
+    while (getchar() != '\n'); // limpa buffer
 
     switch (opcao) {
         case 'n': case 'N':
             push(&historico, 'N');
-            resetar = 1; // Pessoa 1 deve reinicializar o jogo quando ler resetar == 1
+            resetar = 1;    // avisar a pessoa 1 que deve reiniciar tudo
             break;
 
         case 's': case 'S':
@@ -121,14 +137,13 @@ void mostrarMenu() {
 
         case 'v': case 'V':
             push(&historico, 'V');
-            jogoPausado = 0; // Pessoa 1 deve observar isso e voltar ao loop
+            jogoPausado = 0;    // volta ao loop principal
             break;
 
         case 'q': case 'Q':
             push(&historico, 'Q');
             printf("\nSaindo do jogo...\n");
             exit(0);
-            break;
 
         default:
             printf("\nOpcao invalida!\n");
