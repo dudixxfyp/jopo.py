@@ -30,8 +30,7 @@ int pilhaVazia(Pilha *p) {
 }
 
 // ------------------ SALVAR ------------------
-// Versão mínima: salva pacman, blinky (e game_score), e variáveis auxiliares.
-// Caso você tenha mais fantasmas, ajuste para escrever todos.
+
 int salvarJogo() {
     FILE *f = fopen("savegame.bin", "wb");
     if (!f) return 0;
