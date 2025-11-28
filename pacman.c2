@@ -1,0 +1,219 @@
+#include "pacman.h"
+#include "raymath.h"
+#include "raylib.h"
+#include <math.h>
+
+#define GRID 20 // tamanho de uma célula do grid
+#define GRID_W 20 // 20 células no X
+#define GRID_H 40 // 40 células no Y
+
+mapa externo de caráteres[GRID_H][GRID_W];  40 linhas, 20 colunas
+
+cria pacman
+Pacman CriaPacman(const char *spritePath, Vector2 startPos) {
+    Pacman p;
+    p. sprite = LoadTexture(spritePath);
+
+    Garante que ele nasce no centro de uma célula
+    p. pos = (Vector2){
+        chão (startPos.x / GRADE) * GRADE + GRADE/2,
+        chão (startPos.y / GRADE) * GRADE + GRADE/2
+    };
+
+    p. velocidade = 6;  células por segundo
+    p. Rotacao = 0;
+
+    p. qtSprites = 3;
+    p. frames = 0;
+    p. FPS = 12;
+    p. Cronômetro = 0;
+
+    p. largSprite = p. Sprite. largura / p. qtSprites;
+    p. altSprite = p. Sprite. altura;
+
+    p. direção = ' ';
+    p. movendo = falso;
+    p. pontos = 0;  
+    p. vidas = 3;
+    p. timerMorte = 0,0f;
+
+    retorne p;
+}
+
+bool EhParede(int cx, int cy) {
+    return map[cy][cx] == '#';
+}
+
+bool EhPellet(int cx, int cy) {
+    return map[cy][cx] == '.';
+}
+
+bool EhPowPellet(int cx, int cy) {
+    Mapa de retorno[cy][cx] == 'o';
+}
+
+bool EhFantasma(int cx, int cy) {
+    return map[cy][cx] == 'F';
+}
+
+
+Mapeia direção para vetor de movimento
+Vector2 DirecaoParaVetor(char d){
+    se (d == 'w') retorne (Vector2){ 0, -1 };
+    se (d == 's') retorna (Vector2){ 0, 1 };
+    se (d == 'a') retorna (Vector2){ -1, 0 };
+    se (d == 'd') retorne (Vector2){ 1, 0 };
+    return (Vector2){ 0, 0 };
+}
+
+
+
+Atualização posição do Pacman
+void attPacman(Pacman *p, float dt, int screenWidth, int screenHeight, Vector2 startPos) {
+    se (p->vidas <= 0) retornam; não atualiza se pacman morreu
+    
+    decrementa timer de morte
+    se (p->timerMorte > 0) {
+        p->timerMorte -= dt;
+        se (p->timerMorte <= 0) {
+            p->temporizadorMorte = 0;
+            reseta posição após 2 segundos
+            p->pos = (Vector2){
+                chão (startPos.x / GRADE) * GRADE + GRADE/2,
+                chão (startPos.y / GRADE) * GRADE + GRADE/2
+            };
+            p->direção = ' ';
+        }
+        retorno;  não atualiza movimento enquanto está no delay
+    }
+    
+    velocidade flutuante = p->velocidade * GRADE;  Velocidade em pixels/segundo
+
+    Le a ultima tecla pressionada e armazena na variavel input
+    Entrada de char  = p->direção;
+    se (IsKeyDown(KEY_W)) entrada = 'w';
+    se (IsKeyDown(KEY_S)) entrada = 's';
+    if (IsKeyDown(KEY_A)) entrada = 'a';
+    se (IsKeyDown(KEY_D)) entrada = 'd';
+
+    converte direções para vetores
+    Vector2 dirAtual = DirecaoParaVetor(p->direcao);
+    Vector2 dirNova = DirecaoParaVetor(input);
+
+    Calcula posiço atual do Pacman na grid
+    int cx = floor(p->pos.x / GRADE);
+    int cy = floor(p->pos.y / GRID);
+
+    se (EhPellet(cx, cy)) {
+        mapa[cy][cx] = ' ';
+        p->pontos += 10;
+    }
+    
+    se (EhPowPellet(cx, cy)) {
+        mapa[cy][cx] = ' ';
+        p->pontos += 50;
+    }
+
+    Vector2 centro = {cx * GRID + GRID/2, cy * GRID + GRID/2};
+
+    verifica se pacman está alinhado ao centro da célula
+    bool alinhadoX = fabs(p->pos.x - centro. x) < 2.0f;
+    bool alinhadoY = fabs(p->pos.Y - Centro. y) < 2,0f;
+    bool alinhado = alinhadoX & & alinhadoY;
+
+    Confere se muda de direção esta na mesma orientação
+    bool mesmoEixo = 
+    (dirAtual. x != 0 && dirNova. x != 0) ||  horizontal
+    (dirAtual. y != 0 & dirNova. y != 0); vertical
+
+    tenta mudar direção se estiver alinhado ou na mesma orientação
+    se ((alinhado ||  mesmoEixo) && (dirNova.x != 0 ||  dirNova. y != 0)) {
+
+        cálculo próxima célula na nova direção
+        int nx = cx + dirNova. x;
+        int  ny = cy + dirNova. y;
+
+        Muda direção se a nova direção não for parede
+        se (!EhParede(nx, ny)) {
+            p->direcao = entrada;
+            dirAtual = dirNova;
+        }
+    }
+
+    calcula próxima célula na direção atual
+    int nx = cx + dirActual. x;
+    int  ny = cy + dirAtual. y;
+
+    move pacman se não houver parede ou fantasma na próxima célula
+    se (!EhParede(nx, ny)) {
+        se (!EhFantasma(nx, ny)) {
+            P->pos. x += dirAtual. x * velocidade * dt;
+            P->pos. y += dirAtual. y * velocidade * dt;
+        }
+        mais {
+            colidiu com fantasma
+            p->vidas -= 1;
+            
+            inicia timer de morte se vidas ainda > 0
+            se (p->vidas > 0) {
+                p->temporizadorMorte = 2.0f;  2 segundos de delay
+            }
+            se vidas <= 0, posição NÃO reseta (fica onde morreu)
+        }
+
+        garante o movimento perpendicular a parede
+        if (dirAtual.x != 0) p->pos. y = centro. y;
+        if (dirAtual.y != 0) p->pos. x = centro. x;
+    } mais { 
+        impede o movimento paralelo a parede
+        if (dirAtual.x != 0) p->pos. x = centro. x;
+        if (dirAtual.y != 0) p->pos. y = centro. y;
+    }
+
+    animação
+    p->moving = (dirAtual.x != 0 ||  dirAtual. y != 0);
+
+    se (p-> movendo) {
+        p->temporizador += dt;
+        se (p->timer >= 1.0f / p->fps) {
+            p->temporizador = 0;
+            p->quadros = (p->quadros + 1) % p->qtSprites;
+        }
+    } mais {
+        p->frames = 0;
+    }
+
+    rotação
+    se (p->direção == 'w') p->rotacao = -90;
+    se (p->direcao == 's') p->rotacao = 90;
+    se (p->direção == 'a') p->rotacao = 180;
+    se (p->direção == 'd') p->rotacao = 0;
+}
+
+
+desenha pacman na tela
+void desenhaPacman(Pacman *p) {
+
+    Retângulo src = {
+        p->frames * p->largSprite,
+        0,
+        p->largSprite,
+        p->altSprite
+    };
+
+    Retângulo dst = {
+        P->pos. x,
+        P->pos. y,
+        p->largSprite,
+        p->altSprite
+    };
+
+    DrawTexturePro(
+        P->sprite,
+        Src,
+        dst,
+        (Vetor2){ p->largSprite/2, p->altSprite/2 },
+        P->Rotacao,
+        BRANCO
+    );
+}
