@@ -29,7 +29,7 @@ void inserirFantasma(ListaFantasmas *L, Fantasma f) {
 int podeMover(char **mapa, int l, int c, int maxL, int maxC) {
     if (l < 0 || l >= maxL) return 0;
     if (c < 0 || c >= maxC) return 0;
-    return (mapa[l][c] != '#'); 
+    return (mapa[l][c] != '#');
 }
 
 void moverFantasmas(ListaFantasmas *L, char **mapa, int linhas, int colunas) {
@@ -40,13 +40,22 @@ void moverFantasmas(ListaFantasmas *L, char **mapa, int linhas, int colunas) {
 
         if (!atual->f.vivo) continue;
 
-        int dir = rand() % 4;
-        int nl = atual->f.linha + movL[dir];
-        int nc = atual->f.coluna + movC[dir];
+        int movido = 0;
+        int tentativas = 0;
 
-        if (podeMover(mapa, nl, nc, linhas, colunas)) {
-            atual->f.linha = nl;
-            atual->f.coluna = nc;
+        // Fantasma tenta até achar uma direção válida
+        while (!movido && tentativas < 10) {
+            int dir = rand() % 4;
+            int nl = atual->f.linha + movL[dir];
+            int nc = atual->f.coluna + movC[dir];
+
+            if (podeMover(mapa, nl, nc, linhas, colunas)) {
+                atual->f.linha = nl;
+                atual->f.coluna = nc;
+                movido = 1;
+            }
+
+            tentativas++;
         }
     }
 }
@@ -54,12 +63,13 @@ void moverFantasmas(ListaFantasmas *L, char **mapa, int linhas, int colunas) {
 void ativarModoVulneravel(ListaFantasmas *L) {
     for (NoFantasma *atual = L->inicio; atual; atual = atual->prox) {
         atual->f.vulneravel = 1;
-        atual->f.tempoVulneravel = 8;
+        atual->f.tempoVulneravel = 8; // Duração fixa
     }
 }
 
 void atualizarTemporizadorVulneravel(ListaFantasmas *L) {
     for (NoFantasma *atual = L->inicio; atual; atual = atual->prox) {
+
         if (atual->f.vulneravel) {
             atual->f.tempoVulneravel--;
             if (atual->f.tempoVulneravel <= 0)
@@ -75,15 +85,13 @@ int verificarColisoes(ListaFantasmas *L, int pacL, int pacC) {
 
         if (atual->f.linha == pacL && atual->f.coluna == pacC) {
 
-            // Pac-Man come fantasma
             if (atual->f.vulneravel) {
-                atual->f.vivo = 0;
-                return 2;
+                atual->f.vivo = 0;  // Fantasma morre
+                return 2;           // Pac-Man comeu
             }
 
-            // Fantasma mata Pac-Man
-            return 1;
+            return 1;               // Pac-Man morreu
         }
     }
-    return 0;
+    return 0;                       // Nada aconteceu
 }
