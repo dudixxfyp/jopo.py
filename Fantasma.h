@@ -19,16 +19,17 @@ typedef struct {
     NoFantasma *inicio;
 } ListaFantasmas;
 
+// Funções da lista
 void inicializarListaFantasmas(ListaFantasmas *L);
-
 void inserirFantasma(ListaFantasmas *L, Fantasma f);
+void liberarListaFantasmas(ListaFantasmas *L);
 
+// Comportamento dos fantasmas
 void moverFantasmas(ListaFantasmas *L, char **mapa, int linhas, int colunas);
-
 void ativarModoVulneravel(ListaFantasmas *L);
-
 void atualizarTemporizadorVulneravel(ListaFantasmas *L);
 
+// Checagem de colisões
 int verificarColisoes(ListaFantasmas *L, int pacLinha, int pacColuna);
 
 #endif
